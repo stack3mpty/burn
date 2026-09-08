@@ -366,15 +366,7 @@ impl BoolTensorOps<Flex> for Flex {
         indices: IntTensor<Flex>,
         value: BoolTensor<Flex>,
     ) -> BoolTensor<Flex> {
-        let mut result = crate::ops::gather_scatter::select_add::<u8>(tensor, dim, indices, value);
-        // Clamp to 0/1: select_add sums u8 values, but bool OR saturates at 1
-        let storage: &mut [u8] = result.storage_mut();
-        for v in storage.iter_mut() {
-            if *v > 1 {
-                *v = 1;
-            }
-        }
-        result
+        crate::ops::gather_scatter::select_or(tensor, dim, indices, value)
     }
 
     fn bool_transpose(tensor: BoolTensor<Flex>) -> BoolTensor<Flex> {
@@ -588,5 +580,16 @@ mod tests {
         assert_eq!(result.dtype(), burn_backend::DType::F64);
         let data: Vec<f64> = result.into_data().try_into_vec().unwrap();
         assert_eq!(data, vec![1.0f64, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn test_bool_select_or_many_duplicate_indices() {
+        let tensor = FlexTensor::from_data(TensorData::from([false]));
+        let indices = FlexTensor::from_data(TensorData::new(vec![0i64; 256], [256]));
+        let value = FlexTensor::from_data(TensorData::new(vec![true; 256], [256]));
+
+        let result = Flex::bool_select_or(tensor, 0, indices, value);
+
+        assert_eq!(result.bytes(), &[1]);
     }
 }
