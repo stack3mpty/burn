@@ -820,6 +820,23 @@ pub fn select_add<E: Element + Pod + Default + Copy + core::ops::AddAssign + Sen
     )
 }
 
+/// Select OR for bool tensors: ORs values back at positions specified by 1D indices.
+pub fn select_or(
+    tensor: FlexTensor,
+    dim: usize,
+    indices: FlexTensor,
+    value: FlexTensor,
+) -> FlexTensor {
+    select_update::<u8, _>(
+        tensor,
+        dim,
+        indices,
+        value,
+        "select_or",
+        |target, value| *target |= value,
+    )
+}
+
 /// Select assign: replaces tensor values at positions specified by 1D indices.
 pub fn select_assign<E: Element + Pod + Default + Copy + Send + Sync>(
     tensor: FlexTensor,
